@@ -1,0 +1,30 @@
+{
+    "main_bot": {
+        "username": "+79280113665",
+        "password": "Potriot13041974!",
+        "users": {
+            "cloudy": []
+        }
+    },
+    "bot1": {
+        "username": "89675664566",
+        "password": "FAGhddti675087",
+        "users": {
+            "cloudy_test": []
+        }
+    },
+    "bot2": {
+        "username": "664566",
+        "password": "FAGhывывddti675087",
+        "users": {
+            "cloudy_test2": []
+        }
+    },
+    "bot3": {
+        "username": "54654689675664566",
+        "password": "ясясяуцуцFAGhddti675087",
+        "users": {
+            "cloudy2": []
+        }
+    }
+}
