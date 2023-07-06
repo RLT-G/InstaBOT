@@ -1,6 +1,6 @@
 __author__ = 'Konstantin Bychkov <inco.k.b.blizz@gmail.com>'
 __copyright__ = 'Copyright 2023, RLT IP.'
-__version__ = '0.0.9'
+__version__ = '0.1.7'
 
 
 import json
@@ -10,6 +10,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from time import sleep
 from random import randint
+import sys
 
 
 class ManagerBase:
@@ -129,26 +130,33 @@ class ManagerBase:
             print(f"Exec error {ex}")
 
     def run(self):
-        while True: self.executor(input(" >>> "))
+        if len(sys.argv) > 1:
+            if sys.argv[1] is not None:
+                self.executor(sys.argv[1])
+        else:
+            while True: self.executor(input(" >>> "))
 
 
 class Manager(ManagerBase):
     def __init__(self):
         super().__init__()
         self.scripts = Scripts()
+        self.words = self.use_json("d_data/comments.json")["comments"]
 
     def phase_1(self, username: str, password: str, link: str) -> None:
+        # connect to browser
         try:
             options = selenium.webdriver.chrome.options.ChromiumOptions()
             options.add_argument("--start-maximized")
-            browser = webdriver.Chrome(options=options)
+            browser = webdriver.Chrome(r"C:\Users\Наташа\PycharmProjects\MAINproject\driver\chromedriver.exe", options=options)
+            # browser = webdriver.Chrome(options=options)
             browser.get('https://www.instagram.com')
         except Exception as ex:
             print(f"Driver error {ex}")
             return None
 
         self.scripts.have_a_rest(5)
-
+        # send username and password
         try:
             username_input = browser.find_element(By.NAME, "username")
             username_input.clear()
@@ -171,13 +179,16 @@ class Manager(ManagerBase):
 
         self.scripts.have_a_rest(4)
 
+        # show history
         try:
             history_button = browser.find_element(By.XPATH, '/html/body/div[2]/div/div/div[2]/div/div/div/div[1]/div[1]/div[2]/div[2]/section/main/div/header/div/div/span')
             history_button.click()
             self.scripts.have_a_rest(5)
+
         except Exception as ex:
             print(f"History\n{ex}")
         finally:
+            # find href
             browser.get(link)
             self.scripts.have_a_rest(3)
             hrefs = browser.find_elements(By.TAG_NAME, 'a')
@@ -189,7 +200,9 @@ class Manager(ManagerBase):
                 else:
                     visited += 1
                 browser.get(l)
-                self.scripts.have_a_rest(3)
+                self.scripts.have_a_rest(2)
+
+                # try click on sound button
                 try:
                     sound_button = browser.find_element(By.XPATH, '/html/body/div[2]/div/div/div[2]/div/div/div/div[1]/div[1]/div[2]/section/main/div/div[1]/div/div[1]/div/div/div/div/div/div/div/div/div/div/div/div/div[2]/button')
                     sound_button.click()
@@ -197,23 +210,46 @@ class Manager(ManagerBase):
                 except Exception as ex:
                     print(f"Sound\n{ex}")
                 finally:
-                    if randint(1, 10) in range(1, 5):
+                    # try click on the like
+                    if True:#randint(1, 10) in range(1, 5):
                         try:
                             like_button = browser.find_element(By.XPATH, '/html/body/div[2]/div/div/div[2]/div/div/div/div[1]/div[1]/div[2]/section/main/div/div[1]/div/div[2]/div/div[3]/div[1]/div[1]/span[1]/div/div')
                             like_button.click()
                         except Exception as ex:
                             print(f"Like\n{ex}")
                         self.scripts.have_a_rest(1)
-                        if randint(1, 10) in range(1, 3):
+                        # try send comment
+                        if True:#randint(1, 10) in range(1, 3):
                             try:
-                                comment_area = browser.find_element(By.TAG_NAME, 'textarea')
-                                comment_area.clear()
-                                comment_area.send_keys('SomeText')
-                                comment_area.send_keys(Keys.ENTER)
+
+                                smile = browser.find_element(By.XPATH, '/html/body/div[2]/div/div/div[2]/div/div/div/div[1]/div[1]/div[2]/section/main/div/div[1]/div/div[2]/div/section/div/form/div/div[1]/div/div')
+                                # self.scripts.have_a_rest(1)
+                                sleep(5)
+                                smile.click()
+                                # self.scripts.have_a_rest(2)
+                                sleep(5)
+                                smile.click()
+                                # self.scripts.have_a_rest(1)
+                                sleep(5)
+                                comment_area = browser.find_element(By.XPATH, '/html/body/div[2]/div/div/div[2]/div/div/div/div[1]/div[1]/div[2]/section/main/div/div[1]/div/div[2]/div/section/div/form/div/textarea')
+                                # self.scripts.have_a_rest(1)
+                                sleep(5)
+                                comment_area.send_keys(self.words[randint(0, len(self.words) - 1)])
+                                # self.scripts.have_a_rest(2)
+                                sleep(5)
+                                confirm_button = browser.find_element(By.XPATH, '/html/body/div[2]/div/div/div[2]/div/div/div/div[1]/div[1]/div[2]/section/main/div/div[1]/div/div[2]/div/section/div/form/div/div[2]/div')
+                                # self.scripts.have_a_rest(1)
+                                sleep(5)
+                                confirm_button.click()
+                                sleep(5)
+                                # self.scripts.have_a_rest(2)
+
                             except Exception as ex:
                                 print(f"comment\n{ex}")
-                            self.scripts.have_a_rest(1)
-                            if randint(1, 10) == 1:
+                            self.scripts.have_a_rest(2)
+                            
+                            # try click on save button
+                            if True:#randint(1, 10) == 1:
                                 try:
                                     save_button = browser.find_element(By.XPATH,'/html/body/div[2]/div/div/div[2]/div/div/div/div[1]/div[1]/div[2]/section/main/div/div[1]/div/div[2]/div/div[3]/div[1]/div[3]/div/div/div/div')
                                     save_button.click()
@@ -221,9 +257,10 @@ class Manager(ManagerBase):
                                     print(f"Save\n{ex}")
                     self.scripts.have_a_rest(2)
         try:
+            # try subscribe
             subscribe_button = browser.find_element(By.XPATH, '/html/body/div[2]/div/div/div[2]/div/div/div/div[1]/div[1]/div[2]/section/main/div/div[1]/div/div[2]/div/div[1]/header/div[2]/div[1]/div[2]/button/div/div')
             subscribe_button.click()
-            self.scripts.have_a_rest(2)
+            self.scripts.have_a_rest(3)
         except Exception as ex:
             print(f"Subscribe\n{ex}")
         browser.close()
@@ -233,8 +270,8 @@ class Manager(ManagerBase):
         ...
 
     def start(self):
-        self.phase_1(username="+79280113665", password="Potriot13041974!", link="https://www.instagram.com/king_of_fragrance313/")
-
+        self.phase_1(username="+79280113665", password="Potriot13041974!", link="https://www.instagram.com/crescentt/")
+        
     def exit(self):
         ...
 
