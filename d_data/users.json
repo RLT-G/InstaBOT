@@ -1,14 +1,20 @@
 {
     "cloudy1": {
         "main_links": "https://www.instagram.com/cloudymotion4life/",
-        "signed_bots": []
+        "signed_bots": [
+            "bot3",
+            "bot2",
+            "bot1"
+        ],
+        "href": "https://www.instagram.com/p/Cs9IHDavOOl/"
     },
-    "cloudy2": {
-        "main_links": "https://www.instagram.com/cloudymotion4life/",
-        "signed_bots": []
-    },
-    "cloudy3": {
-        "main_links": "https://www.instagram.com/cloudymotion4life/",
-        "signed_bots": []
+    "Scumbriya": {
+        "main_links": "https://www.instagram.com/inco_k._b._/",
+        "signed_bots": [
+            "bot2",
+            "bot1",
+            "bot3"
+        ],
+        "href": "https://www.instagram.com/p/Cup4-e_Bdzf/"
     }
 }

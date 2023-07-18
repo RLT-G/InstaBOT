@@ -2,6 +2,5 @@
     "/all_c": "self.all_c()",
     "/add_b": "self.add_bot()",
     "/add_u": "self.add_user()",
-    "/start": "self.start()",
-    "/exit": "self.exit()"
+    "/start": "self.start()"
 }

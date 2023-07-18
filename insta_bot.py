@@ -8,8 +8,9 @@ from selenium.webdriver.common.by import By
 import selenium.webdriver.chrome.options
 from selenium import webdriver
 
+
+from random import randint, choice, uniform
 from multiprocessing import Process, Queue
-from random import randint, choice
 from time import sleep
 import datetime
 import json
@@ -23,6 +24,7 @@ class ManagerBase:
     """
     def __init__(self):
         self.command: dict = self.use_json('d_data/command.json')
+        print(f"all commands:\n{self.command.keys()}")
 
     def add_bot(self, path=None) -> None:
         """
@@ -42,6 +44,7 @@ class ManagerBase:
                     "password": password
                 }
             )
+            print("Successfully added")
         else:
             file = open(path, 'r', encoding='utf-8')
             try:
@@ -61,6 +64,7 @@ class ManagerBase:
                 print(ex)
             finally:
                 file.close()
+                print("Successfully added")
 
     def add_user(self):
         name, main_links = input('client-name >>> '), input('main-link >>>')
@@ -73,14 +77,14 @@ class ManagerBase:
                 "signed_bots": []
             }
         )
+        print("Successfully added")
 
     def start(self):
-        ...
-
-    def exit(self):
+        print('Bot-System launched')
         ...
 
     def phase_1(self, username: str, password: str, link: str):
+        # print(f'phase one has started. data: \nusername - {username}, password - {password}, link - {link}')
         ...
 
     def phase_2(self):
@@ -139,11 +143,12 @@ class ManagerBase:
             print(f"Exec error {ex}")
 
     def run(self):
-        if len(sys.argv) > 1:
-            if sys.argv[1] is not None:
-                self.executor(sys.argv[1])
-        else:
-            while True: self.executor(input(" >>> "))
+        while True: 
+            command = input(" >>> ")
+            if 'try_exec' in command:
+                self.executor(command.split()[1], try_exec=True)
+            else:
+                self.executor(command)
 
 
 class Manager(ManagerBase):
@@ -153,10 +158,14 @@ class Manager(ManagerBase):
         self.words = self.use_json("d_data/comments.json")["comments"]
         self.users_data = self.use_json("d_data/users.json")
         self.bots_data = self.use_json("d_data/bots.json")
+        self.main_data = self.use_json("d_data/main.json")
         self.input_time = [
-            self.scripts.rtime_from_range("07:00-9:00"), 
-            self.scripts.rtime_from_range("20:00-22:00")
+            # self.scripts.rtime_from_range("07:00-9:00"), 
+            # self.scripts.rtime_from_range("20:00-22:00")
+            self.scripts.rtime_from_range("02:51-2:51"), 
+            self.scripts.rtime_from_range("02:24-02:25")
             ]
+        print(*self.input_time)
 
     def phase_1(self, username: str, password: str, link: str) -> None:
         def like() -> None:
@@ -164,7 +173,8 @@ class Manager(ManagerBase):
                 like_button = browser.find_element(By.XPATH, '/html/body/div[2]/div/div/div[2]/div/div/div/div[1]/div[1]/div[2]/section/main/div/div[1]/div/div[2]/div/div[3]/div[1]/div[1]/span[1]/div/div')
                 like_button.click()
             except Exception as ex:
-                print(f"Like\n{ex}")
+                print(f"Ошибка выставления лайка\nusername >>> {username}\nlink >>> {link}")
+                # print(f"Like\n{ex}")
             self.scripts.have_a_rest(1)
         def comment() -> None:
             try:
@@ -183,15 +193,18 @@ class Manager(ManagerBase):
                 confirm_button.click()
                 sleep(5)
             except Exception as ex:
-                print(f"comment\n{ex}")
+                print(f"Ошибка выставления коммента\nusername >>> {username}\nlink >>> {link}")
+                # print(f"comment\n{ex}")
             self.scripts.have_a_rest(1)
         def saves() -> None:
             try:
                 save_button = browser.find_element(By.XPATH,'/html/body/div[2]/div/div/div[2]/div/div/div/div[1]/div[1]/div[2]/section/main/div/div[1]/div/div[2]/div/div[3]/div[1]/div[3]/div/div/div/div')
                 save_button.click()
             except Exception as ex:
-                print(f"Save\n{ex}")
+                print(f"Ошибка сохранения\nusername >>> {username}\nlink >>> {link}")
+                # print(f"Save\n{ex}")
             self.scripts.have_a_rest(1)
+        # super().phase_1()
         # connect to browser
         try:
             options = selenium.webdriver.chrome.options.ChromiumOptions()
@@ -210,7 +223,8 @@ class Manager(ManagerBase):
             username_input.clear()
             username_input.send_keys(username)
         except Exception as ex:
-            print(f"Username input error {ex}")
+            print(f"Username input error\nusername >>> {username}\nlink >>> {link}")
+            # print(f"Username input error {ex}")
         self.scripts.have_a_rest(1)
         try:
             password_input = browser.find_element(By.NAME, "password")
@@ -219,7 +233,8 @@ class Manager(ManagerBase):
             self.scripts.have_a_rest(1)
             password_input.send_keys(Keys.ENTER)
         except Exception as ex:
-            print(f"Password input error \n {ex}")
+            print(f"password input error\nusername >>> {username}\nlink >>> {link}")
+            # print(f"Password input error \n {ex}")
 
         self.scripts.have_a_rest(4)
 
@@ -234,14 +249,18 @@ class Manager(ManagerBase):
             self.scripts.have_a_rest(5)
 
         except Exception as ex:
-            print(f"History\n{ex}")
+            print(f"Нет истории или ошибка истории\nusername >>> {username}\nlink >>> {link}")
+            # print(f"History\n{ex}")
         finally:
             # find href
             browser.get(link)
             self.scripts.have_a_rest(3)
-            hrefs = browser.find_elements(By.TAG_NAME, 'a')
-            current_links = [item.get_attribute('href') for item in hrefs if '/p/' in item.get_attribute('href')]
-            visited, max_visited = 0, randint(7, 12)
+            try:
+                hrefs = browser.find_elements(By.TAG_NAME, 'a')
+                current_links = [item.get_attribute('href') for item in hrefs if '/p/' in item.get_attribute('href')]
+                visited, max_visited = 0, randint(7, 12)
+            except Exception as ex:
+                print(f"Ошибка поиска постов\nusername >>> {username}\nlink >>> {link}")
             for l in current_links:
                 if visited >= max_visited:
                     break
@@ -256,7 +275,8 @@ class Manager(ManagerBase):
                     sound_button.click()
                     self.scripts.have_a_rest(1)
                 except Exception as ex:
-                    print(f"Sound\n{ex}")
+                    print(f"Не видео или ошибка видео\nusername >>> {username}\nlink >>> {link}")
+                    # print(f"Sound\n{ex}")
                 finally:
                     r_number = randint(1, 100)
                     if r_number in range(1, 41): 
@@ -273,36 +293,187 @@ class Manager(ManagerBase):
             subscribe_button.click()
             self.scripts.have_a_rest(3)
         except Exception as ex:
-            print(f"Subscribe\n{ex}")
+            print(f"Ошибка подписки\nusername >>> {username}\nlink >>> {link}")
+            # print(f"Subscribe\n{ex}")
         browser.close()
         browser.quit()
 
-    def phase_2(self):
-        # в первый день 50% ботов работают В 2й 30% в 3й 20%
-        # В течение дня по 4 временным рамкам порвну запускаем ботов на лайки
+    def phase_2(self, href, key):
+        def expose(bots: str, href: str) -> None:
+            def like() -> None:
+                try:
+                    like_button = browser.find_element(By.XPATH, '/html/body/div[2]/div/div/div[2]/div/div/div/div[1]/div[1]/div[2]/section/main/div/div[1]/div/div[2]/div/div[3]/div[1]/div[1]/span[1]/div/div')
+                    like_button.click()
+                except Exception as ex:
+                    print(f"Ошибка выставления лайка\nusername >>> {username}\nlink >>> {link}")
+                    # print(f"Like\n{ex}")
+                self.scripts.have_a_rest(1)
+            def comment() -> None:
+                try:
+                    smile = browser.find_element(By.XPATH, '/html/body/div[2]/div/div/div[2]/div/div/div/div[1]/div[1]/div[2]/section/main/div/div[1]/div/div[2]/div/section/div/form/div/div[1]/div/div')
+                    sleep(5)
+                    smile.click()
+                    sleep(5)
+                    smile.click()
+                    sleep(5)
+                    comment_area = browser.find_element(By.XPATH, '/html/body/div[2]/div/div/div[2]/div/div/div/div[1]/div[1]/div[2]/section/main/div/div[1]/div/div[2]/div/section/div/form/div/textarea')
+                    sleep(5)
+                    comment_area.send_keys(self.words[randint(0, len(self.words) - 1)])
+                    sleep(5)
+                    confirm_button = browser.find_element(By.XPATH, '/html/body/div[2]/div/div/div[2]/div/div/div/div[1]/div[1]/div[2]/section/main/div/div[1]/div/div[2]/div/section/div/form/div/div[2]/div')
+                    sleep(5)
+                    confirm_button.click()
+                    sleep(5)
+                except Exception as ex:
+                    print(f"Ошибка выставления коммента\nusername >>> {username}\nlink >>> {link}")
+                    # print(f"comment\n{ex}")
+                self.scripts.have_a_rest(1)
+            def saves() -> None:
+                try:
+                    save_button = browser.find_element(By.XPATH,'/html/body/div[2]/div/div/div[2]/div/div/div/div[1]/div[1]/div[2]/section/main/div/div[1]/div/div[2]/div/div[3]/div[1]/div[3]/div/div/div/div')
+                    save_button.click()
+                except Exception as ex:
+                    print(f"Ошибка сохранения\nusername >>> {username}\nlink >>> {link}")
+                    # print(f"Save\n{ex}")
+                self.scripts.have_a_rest(1)
+            
+            username = self.bots_data[bots]['username']
+            password = self.bots_data[bots]['password']
+            try:
+                options = selenium.webdriver.chrome.options.ChromiumOptions()
+                options.add_argument("--start-maximized")
+                browser = webdriver.Chrome(r"C:\Users\Наташа\PycharmProjects\MAINproject\driver\chromedriver.exe", options=options)
+                # browser = webdriver.Chrome(options=options)
+                browser.get('https://www.instagram.com')
+            except Exception as ex:
+                print(f"Driver error {ex}")
+                return None
 
-        # Пишем метод на тупо лайк с коментом и прочей хуйней
-        # выплываем из говна и радуемся
-        ...
+            self.scripts.have_a_rest(5)
+            try:
+                username_input = browser.find_element(By.NAME, "username")
+                username_input.clear()
+                username_input.send_keys(username)
+            except Exception as ex:
+                print(f"Username input error (phase2)\nusername >>> {username}\nlink >>> {href}")
+            self.scripts.have_a_rest(1)
+            try:
+                password_input = browser.find_element(By.NAME, "password")
+                password_input.clear()
+                password_input.send_keys(password)
+                self.scripts.have_a_rest(1)
+                password_input.send_keys(Keys.ENTER)
+            except Exception as ex:
+                print(f"password input error (phase2)\nusername >>> {username}\nlink >>> {href}")
+
+            self.scripts.have_a_rest(4)
+
+            browser.get(href)
+
+            self.scripts.have_a_rest(4)
+
+            r_number = randint(1, 100)
+        
+            if r_number in range(1, 76): 
+                like()
+            elif r_number in range(76, 91): 
+                like(), comment()
+            else: 
+                like(), comment(), saves()
+            
+
+
+        signed_bots = self.users_data[key]['signed_bots']
+        days = day1, day2, day3 = self.scripts.split_list(signed_bots)
+        current_day = 0
+
+        # Бахаем скрипты на сегодняшний день (Это current_day 0)
+        #####################################################################################################################################
+        timepoints = self.scripts.get_random_timepoints(start_time=datetime.datetime.now().strftime("%H:%M"), end_time='23:59', num_points=3)
+        day1_1, day1_2, day1_3 = self.scripts.split_list(day1)
+        while True:
+            if datetime.datetime.now().strftime("%H:%M") == timepoints[0]:
+                if day1_1 != []:
+                    for bots in day1_1:
+                        # run phase3 (bots, href=const)
+                        expose(bots, href)
+            elif datetime.datetime.now().strftime("%H:%M") == timepoints[1]:
+                if day1_2 != []:
+                    for bots in day1_2:
+                        # run phase3 (bots, href=const)
+                        expose(bots, href)
+            elif datetime.datetime.now().strftime("%H:%M") == timepoints[2]:
+                if day1_3 != []:
+                    for bots in day1_3:
+                        # run phase3 (bots, href=const)
+                        expose(bots, href)
+                break
+        #####################################################################################################################################
+        while True:
+            if datetime.datetime.now().strftime("%H:%M") == "00:00":
+                current_day += 1
+                match current_day:
+                    case 1:
+                        # Действия под второй день
+                        timepoints = self.scripts.get_random_timepoints(start_time=datetime.datetime.now().strftime("%H:%M"), end_time='23:59', num_points=3)
+                        day2_1, day2_2, day2_3 = self.scripts.split_list(day1)
+                        while True:
+                            if datetime.datetime.now().strftime("%H:%M") == timepoints[0]:
+                                if day2_1 != []:
+                                    for bots in day2_1:
+                                        # run phase3 (bots, href=const)
+                                        expose(bots, href)
+                            elif datetime.datetime.now().strftime("%H:%M") == timepoints[1]:
+                                if day2_2 != []:
+                                    for bots in day2_2:
+                                        # run phase3 (bots, href=const)
+                                        expose(bots, href)
+                            elif datetime.datetime.now().strftime("%H:%M") == timepoints[2]:
+                                if day2_3 != []:
+                                    for bots in day2_3:
+                                        # run phase3 (bots, href=const)
+                                        expose(bots, href)
+                                break
+                    case 2:
+                        # Действия под третий день
+                        timepoints = self.scripts.get_random_timepoints(start_time=datetime.datetime.now().strftime("%H:%M"), end_time='23:59', num_points=3)
+                        day3_1, day3_2, day3_3 = self.scripts.split_list(day1)
+                        while True:
+                            if datetime.datetime.now().strftime("%H:%M") == timepoints[0]:
+                                if day3_1 != []:
+                                    for bots in day3_1:
+                                        expose(bots, href)
+                            elif datetime.datetime.now().strftime("%H:%M") == timepoints[1]:
+                                if day3_2 != []:
+                                    for bots in day3_2:
+                                        expose(bots, href)
+                            elif datetime.datetime.now().strftime("%H:%M") == timepoints[2]:
+                                if day3_3 != []:
+                                    for bots in day3_3:
+                                        expose(bots, href)
+                                break
+                    case 3:
+                        # Завершение процесса (Выход)
+                        return 0
 
     def start(self):
         # Если и ебанет то только тут
         # self.phase_1(username="+79280113665", password="Potriot13041974!", link="https://www.instagram.com/kimfelix143/")
+
         while True:
-            queue = Queue()
             if datetime.datetime.now().strftime("%H:%M") == "00:00":
                 self.input_time = [
                 self.scripts.rtime_from_range("07:00-9:00"), 
                 self.scripts.rtime_from_range("20:00-22:00")
                 ]
 
+            queue = Queue()
             launch = Process(target=self.launch_detector, args=(queue, ), daemon=False)
-            update = Process(target=self.update_detector, daemon=False)
+            update = Process(target=self.update_detector, args=(queue, ), daemon=False)
 
             launch.start()
-            update.start()
-
             launch.join()
+
             update_data = queue.get()
             if update_data is not None:
                 self.users_data
@@ -310,14 +481,22 @@ class Manager(ManagerBase):
                     if key in list(update_data.keys()):
                         self.users_data[key]['signed_bots'].append(update_data[key])
                 with open("d_data/users.json", 'w') as users_data:
-                    json.dump(self.users_data, users_data)
+                    json.dump(self.users_data, users_data, ensure_ascii=False, indent=4)
 
+            update.start()
             update.join()
+
+            update_data: dict = queue.get()
+            if update_data is not None:
+                for key, value in self.users_data.items():
+                    if key in update_data.keys():
+                        self.users_data[key]['href'] = update_data[key]
+                with open("d_data/users.json", 'w') as users_data:
+                    json.dump(self.users_data, users_data, ensure_ascii=False, indent=4)
 
     # Уважаемый примат читающий это завтра - не забудь try catch везде проставить. Процессы же ультанут - пезда бд будет
 
     def launch_detector(self, queue):
-        # Ну или тут
         current_time = datetime.datetime.now().strftime("%H:%M")
         if current_time == self.input_time[0] or current_time == self.input_time[1]:
             update_data = {}
@@ -334,6 +513,7 @@ class Manager(ManagerBase):
                     defs.append(process)
             if len(defs) != 0:
                 for process in defs:
+                    self.scripts.have_a_rest(2)
                     process.start()
                 for process in defs:
                     process.join()
@@ -344,19 +524,87 @@ class Manager(ManagerBase):
         else:
             queue.put(None)
 
-    def update_detector(self):
+    def update_detector(self, queue: Queue):
         # Пробегаем по человечкам
         # Сверяем 
         # если что запускаем фазу 2
-        ...
+        try:
+            options = selenium.webdriver.chrome.options.ChromiumOptions()
+            options.add_argument("--start-maximized")
+            browser = webdriver.Chrome(r"C:\Users\Наташа\PycharmProjects\MAINproject\driver\chromedriver.exe", options=options)
+            browser.get('https://www.instagram.com')
+        except Exception as ex:
+            print(f"Driver error {ex}")
+            return None
         
-    def exit(self):
-        ...
+        self.scripts.have_a_rest(5)
+
+        try:
+            username_input = browser.find_element(By.NAME, "username")
+            username_input.clear()
+            username_input.send_keys(self.main_data['username'])
+        except Exception as ex:
+            print(f"Username input error\nusername >>> {self.main_data['username']}")
+        self.scripts.have_a_rest(1)
+        try:
+            password_input = browser.find_element(By.NAME, "password")
+            password_input.clear()
+            password_input.send_keys(self.main_data['password'])
+            self.scripts.have_a_rest(1)
+            password_input.send_keys(Keys.ENTER)
+        except Exception as ex:
+            print(f"password input error\nusername >>> {self.main_data['username']}")
+
+        self.scripts.have_a_rest(4)
+
+        answer = {
+
+        }
+
+        for key, value in self.users_data.items():
+            browser.get(self.users_data[key]['main_links'])
+            self.scripts.have_a_rest(4)
+
+            try:
+                hrefs = browser.find_elements(By.TAG_NAME, 'a')
+                current_links = [item.get_attribute('href') for item in hrefs if '/p/' in item.get_attribute('href')]
+            except Exception as ex:
+                print(f"Ошибка поиска поста в update")
+
+            if "href" in self.users_data[key].keys():
+                if self.users_data[key]['href'] != current_links[0]:
+                    answer[key] = current_links[0]
+                    # run phase 2
+                    phase_two = Process(target=self.phase_2, args=(current_links[0], key), daemon=False)
+                    phase_two.start()
+            else:
+                answer[key] = current_links[0]
+            self.scripts.have_a_rest(2)
+        if answer != {}:
+            queue.put(answer)
+        else:
+            queue.put(None)
 
 
 class Scripts:
     def __init__(self):
         ...
+
+    @staticmethod
+    def split_list(list1):
+        total_elements = len(list1)
+
+        # Вычисляем количество элементов для каждого списка на основе пропорций
+        size_list2 = total_elements // 2
+        size_list3 = total_elements * 3 // 10
+        size_list4 = total_elements * 2 // 10
+
+        # Разделяем список на три части
+        list2 = list1[:size_list2]
+        list3 = list1[size_list2:size_list2 + size_list3]
+        list4 = list1[size_list2 + size_list3:]
+
+        return list2, list3, list4
 
     @staticmethod
     def get_random_unique_element(list1, list2):
@@ -380,7 +628,6 @@ class Scripts:
         rang = list(map(convert_to_sec, rang.split("-")))
         return convert_to_time(randint(rang[0], rang[1]))
 
-
     @staticmethod
     def have_a_rest(mode: int) -> None:
         """
@@ -391,8 +638,8 @@ class Scripts:
             4 -> (20;30)
             5 -> (30;40)
             :param mode:
-            :return:
-            """
+            :return: None
+        """
         match mode:
             case 1:
                 sleep(randint(2, 5))
@@ -406,6 +653,45 @@ class Scripts:
                 sleep(randint(30, 40))
             case _:
                 print("Invalid mode")
+
+    @staticmethod
+    def get_random_timepoints(start_time, end_time, num_points):
+        start_dt = datetime.datetime.strptime(start_time, '%H:%M')
+        end_dt = datetime.datetime.strptime(end_time, '%H:%M')
+
+        # Вычисляем разницу между временем включения программы и "23:59"
+        total_time = end_dt - start_dt
+
+        # Вычисляем интервал между временными точками
+        interval = total_time / (num_points + 1)
+
+        # Список для хранения временных точек
+        timepoints = []
+
+        # Вычисляем временные точки
+        current_time = start_dt + interval
+        for _ in range(num_points):
+            timepoints.append(current_time.strftime('%H:%M'))
+            current_time += interval
+
+        return timepoints
+    
+    @staticmethod
+    def increase_time_randomly(time_str):
+        # Преобразуем строку времени в объект datetime
+        time_obj = datetime.datetime.strptime(time_str, '%H:%M')
+
+        # Вычисляем случайное количество времени в пределах 1.5 часа
+        random_time_delta = datetime.timedelta(hours=uniform(0, 1.5))
+
+        # Увеличиваем время на случайный интервал
+        increased_time = time_obj + random_time_delta
+
+        # Форматируем результат в строку времени "%H:%M"
+        increased_time_str = increased_time.strftime('%H:%M')
+
+        return increased_time_str
+
 
 
 if __name__ == '__main__':
